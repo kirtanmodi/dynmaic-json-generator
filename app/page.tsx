@@ -37,12 +37,31 @@ export default function Home() {
   const [sectionId] = useState(uuidv4().substring(0, 10));
 
   const handleInputPaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    if (!e.target.value.trim()) {
+      setParsedData([]);
+      return;
+    }
+
     try {
-      setInputText(e.target.value);
       const parsed = JSON.parse(e.target.value);
+      if (!Array.isArray(parsed)) {
+        alert("Input must be an array of objects");
+        return;
+      }
+
+      // Validate structure of each object
+      const isValid = parsed.every((item) => item && typeof item === "object" && "line" in item && "name" in item);
+
+      if (!isValid) {
+        alert('Each item must have "line" and "name" properties');
+        return;
+      }
+
       setParsedData(parsed);
     } catch (error) {
-      console.error("Invalid JSON input");
+      alert("Invalid JSON format. Please check your input.");
+      console.error("JSON parsing error:", error);
     }
   };
 
@@ -53,14 +72,29 @@ export default function Home() {
   };
 
   const generateFormattedJSON = () => {
+    if (!parsedData.length) {
+      alert("Please paste valid JSON input first");
+      return;
+    }
+
+    if (!documentTitle.trim()) {
+      alert("Please enter a document title");
+      return;
+    }
+
+    if (!sectionTitle.trim()) {
+      alert("Please enter a section title");
+      return;
+    }
+
     const formatted = parsedData.map((item) => ({
       line: item.line,
       uuid: uuidv4(),
       name: item.name,
       title: `<p>${item.name}</p>`,
-      type: "number_type2", // default type
+      type: "number_type2",
       expanded: true,
-      is_mandatory: true,
+      is_mandatory: false,
       children: [],
     }));
     setFormattedData(formatted);
@@ -82,6 +116,22 @@ export default function Home() {
         children: [section],
       },
     ];
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!formattedData.length) {
+      alert("No data to copy. Please process some data first.");
+      return;
+    }
+
+    try {
+      const jsonString = JSON.stringify(getFinalJSON(), null, 2);
+      await navigator.clipboard.writeText(jsonString);
+      alert("JSON copied to clipboard!");
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      alert("Failed to copy to clipboard");
+    }
   };
 
   return (
@@ -169,7 +219,20 @@ export default function Home() {
 
       {formattedData.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xl font-bold mb-2">Generated JSON</h2>
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-bold">Generated JSON</h2>
+            <button onClick={handleCopyToClipboard} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                />
+              </svg>
+              Copy JSON
+            </button>
+          </div>
           <pre className="bg-gray-100 p-4 rounded overflow-auto">{JSON.stringify(getFinalJSON(), null, 2)}</pre>
         </div>
       )}
