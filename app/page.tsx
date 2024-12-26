@@ -1,101 +1,178 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+
+interface InputData {
+  line: string;
+  name: string;
+}
+
+interface FormattedData {
+  line: string;
+  uuid: string;
+  name: string;
+  title: string;
+  type: string;
+  expanded: boolean;
+  children?: FormattedData[];
+  is_mandatory: boolean;
+}
+
+interface ParentSection {
+  text: string;
+  id: string;
+  uuid: string;
+  children: FormattedData[];
+}
+
+const typeOptions = ["number_type2", "passfail", "passfail_decline", "text_type2"];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [inputText, setInputText] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [sectionTitle, setSectionTitle] = useState("Inspection List");
+  const [parsedData, setParsedData] = useState<InputData[]>([]);
+  const [formattedData, setFormattedData] = useState<FormattedData[]>([]);
+  const [documentId] = useState(uuidv4());
+  const [sectionId] = useState(uuidv4().substring(0, 10));
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleInputPaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    try {
+      setInputText(e.target.value);
+      const parsed = JSON.parse(e.target.value);
+      setParsedData(parsed);
+    } catch (error) {
+      console.error("Invalid JSON input");
+    }
+  };
+
+  const handleTypeChange = (index: number, type: string) => {
+    const newData = [...formattedData];
+    newData[index].type = type;
+    setFormattedData(newData);
+  };
+
+  const generateFormattedJSON = () => {
+    const formatted = parsedData.map((item) => ({
+      line: item.line,
+      uuid: uuidv4(),
+      name: item.name,
+      title: `<p>${item.name}</p>`,
+      type: "number_type2", // default type
+      expanded: true,
+      is_mandatory: true,
+      children: [],
+    }));
+    setFormattedData(formatted);
+  };
+
+  const getFinalJSON = () => {
+    const section: ParentSection = {
+      text: sectionTitle,
+      id: sectionId,
+      uuid: uuidv4(),
+      children: formattedData,
+    };
+
+    return [
+      {
+        id: documentId,
+        text: documentTitle,
+        uuid: uuidv4(),
+        children: [section],
+      },
+    ];
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">JSON Data Formatter</h1>
+
+      <div className="mb-4">
+        <label className="block mb-2">Document Title:</label>
+        <input
+          type="text"
+          className="w-full p-2 border rounded mb-4"
+          value={documentTitle}
+          onChange={(e) => setDocumentTitle(e.target.value)}
+          placeholder="Enter document title"
+        />
+
+        <label className="block mb-2">Section Title:</label>
+        <input
+          type="text"
+          className="w-full p-2 border rounded mb-4"
+          value={sectionTitle}
+          onChange={(e) => setSectionTitle(e.target.value)}
+          placeholder="Enter section title"
+        />
+
+        <label className="block mb-2">Paste JSON Input:</label>
+        <textarea
+          className="w-full p-2 border rounded"
+          rows={5}
+          value={inputText}
+          onChange={handleInputPaste}
+          placeholder="Paste your JSON input here"
+        />
+        <button onClick={generateFormattedJSON} className="mt-2 px-4 py-2 bg-blue-500 text-white rounded">
+          Process Input
+        </button>
+      </div>
+
+      {formattedData.length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-xl font-bold mb-2">Data Table</h2>
+          <table className="w-full border-collapse border">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border p-2">Line</th>
+                <th className="border p-2">Name</th>
+                <th className="border p-2">Type</th>
+                <th className="border p-2">UUID</th>
+                <th className="border p-2">Mandatory</th>
+              </tr>
+            </thead>
+            <tbody>
+              {formattedData.map((item, index) => (
+                <tr key={item.uuid}>
+                  <td className="border p-2">{item.line}</td>
+                  <td className="border p-2">{item.name}</td>
+                  <td className="border p-2">
+                    <select value={item.type} onChange={(e) => handleTypeChange(index, e.target.value)} className="w-full p-1 border rounded">
+                      {typeOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="border p-2">{item.uuid}</td>
+                  <td className="border p-2">
+                    <input
+                      type="checkbox"
+                      checked={item.is_mandatory}
+                      onChange={(e) => {
+                        const newData = [...formattedData];
+                        newData[index].is_mandatory = e.target.checked;
+                        setFormattedData(newData);
+                      }}
+                      className="form-checkbox h-5 w-5"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {formattedData.length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-xl font-bold mb-2">Generated JSON</h2>
+          <pre className="bg-gray-100 p-4 rounded overflow-auto">{JSON.stringify(getFinalJSON(), null, 2)}</pre>
+        </div>
+      )}
     </div>
   );
 }
