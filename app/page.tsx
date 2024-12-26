@@ -94,7 +94,7 @@ export default function Home() {
       title: `<p>${item.name}</p>`,
       type: "number_type2",
       expanded: true,
-      is_mandatory: false,
+      is_mandatory: true,
       children: [],
     }));
     setFormattedData(formatted);
