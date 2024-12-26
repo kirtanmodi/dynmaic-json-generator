@@ -31,6 +31,7 @@ export default function Home() {
   const [inputText, setInputText] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [sectionTitle, setSectionTitle] = useState("Inspection List");
+  const [defaultType, setDefaultType] = useState("number_type2");
   const [parsedData, setParsedData] = useState<InputData[]>([]);
   const [formattedData, setFormattedData] = useState<FormattedData[]>([]);
   const [documentId] = useState(uuidv4());
@@ -92,7 +93,7 @@ export default function Home() {
       uuid: uuidv4(),
       name: item.name,
       title: `<p>${item.name}</p>`,
-      type: "number_type2",
+      type: defaultType,
       expanded: true,
       is_mandatory: true,
       children: [],
@@ -139,23 +140,40 @@ export default function Home() {
       <h1 className="text-2xl font-bold mb-4">JSON Data Formatter</h1>
 
       <div className="mb-4">
-        <label className="block mb-2">Document Title:</label>
-        <input
-          type="text"
-          className="w-full p-2 border rounded mb-4"
-          value={documentTitle}
-          onChange={(e) => setDocumentTitle(e.target.value)}
-          placeholder="Enter document title"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block mb-2">Document Title:</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded"
+              value={documentTitle}
+              onChange={(e) => setDocumentTitle(e.target.value)}
+              placeholder="Enter document title"
+            />
+          </div>
 
-        <label className="block mb-2">Section Title:</label>
-        <input
-          type="text"
-          className="w-full p-2 border rounded mb-4"
-          value={sectionTitle}
-          onChange={(e) => setSectionTitle(e.target.value)}
-          placeholder="Enter section title"
-        />
+          <div>
+            <label className="block mb-2">Section Title:</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded"
+              value={sectionTitle}
+              onChange={(e) => setSectionTitle(e.target.value)}
+              placeholder="Enter section title"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2">Default Type:</label>
+            <select value={defaultType} onChange={(e) => setDefaultType(e.target.value)} className="w-full p-2 border rounded">
+              {typeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         <label className="block mb-2">Paste JSON Input:</label>
         <textarea
